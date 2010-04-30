@@ -81,7 +81,7 @@
 (defvar *haxe-regexp-keyword-list*
   (compile-regexp-keyword-list
    `(("'[^']*'"    t ,*haxe-string-face* :string)
-     ("\"[^\"]*\"" t ,*haxe-string-face* :string))))
+     ("\"[^\"]*\"" t ,*haxe-string-face* :string)))
   "haxe-mode: regex keyword list")
 
 (defvar *haxe-keyword-hash-table* nil)
