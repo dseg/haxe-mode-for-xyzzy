@@ -1,4 +1,4 @@
-;; -*- Mode: Lisp; Package: EDITOR; tab-width: 4 -*- -------------------
+;; -*- Mode: Lisp; Package: EDITOR; -*- --------------------------------
 ;;
 ;; Title:   haxe-mode, A Xyzzy major mode for the haXe language
 ;; Author:  Daichi Shinozaki <shinozaki.daichi@classmethod.jp>
@@ -11,11 +11,10 @@
 ;;    0.1 - Initial release, some syntax-hilighting only.
 ;;
 ;; Usage:
-;;  Include something like this in your .xyzzy.
+;;  Include something like this in your .xyzzy
 ;;
-;; (export 'ed::haxe-mode "ed")
-;; (autoload 'haxe-mode "haxe-mode" t)
-;; (pushnew '("\\.hx$" . haxe-mode) *auto-mode-alist* :test 'equal)
+;; (require "haxe-mode")
+;; (push '("\\.hx$" . haxe-mode) *auto-mode-alist*)
 ;;
 ;; Copyright (c) 2010 Daichi Shinozaki
 ;;
@@ -40,36 +39,24 @@
 ;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 (provide "haxe-mode")
-
-(in-package "editor")
-
-(export '(*haxe-mode-hook*
-		  *haxe-mode-map* haxe-mode
-		  *haxe-mode-abbrev-table*
-		  *haxe-mode-syntax-table*
-		  *haxe-indent-level*
-		  *haxe-continued-line-offset*
-		  *haxe-label-offset*
-		  *haxe-tab-always-indent*
-		  *haxe-auto-close*
-		  *haxe-auto-cap*
-		  *haxe-auto-correct-else-if*
-		  *haxe-auto-correct-then*
-		  *haxe-auto-correct-operators*
-		  *haxe-comment-column*
-		  *haxe-popup-completion-list*
-		  haxe-indent-line
-		  haxe-newline-and-indent
-		  haxe-electric-close
-		  haxe-electric-cap
-		  haxe-forward-block
-		  haxe-backward-block
-		  haxe-beginning-of-defun
-		  haxe-end-of-defun
-		  haxe-correct-operators
-		  haxe-indent-sexp
-		  haxe-completion))
 (require "cc-mode")
+
+(export '(haxe-mode
+         *haxe-mode-abbrev-table*
+         *haxe-mode-syntax-table*
+         *haxe-indent-level*
+         *haxe-continued-line-offset*
+         *haxe-label-offset*
+         *haxe-tab-always-indent*
+         *haxe-mode-hook*
+         *haxe-comment-column*
+         *haxe-popup-completion-list*
+         *haxe-regexp-keyword-list*
+         *haxe-string-face*
+         *haxe-mode-map*
+         haxe-indent-line
+         haxe-newline-and-indent
+         haxe-completion))
 
 (defconstant *haxe-mode-version* "0.1" "haxe-mode: version")
 (defvar *haxe-indent-level*            2)
@@ -79,24 +66,29 @@
 (defvar *haxe-mode-hook*             nil)
 (defvar *haxe-comment-column*        nil)
 (defvar *haxe-popup-completion-list* nil)
-
+(defvar *haxe-string-face* '(:color 9))
 (defvar *haxe-mode-map* nil)
 (unless *haxe-mode-map*
   (setq *haxe-mode-map* (make-sparse-keymap))
-  (define-key *haxe-mode-map* #\TAB   'c-indent-line)
-  (define-key *haxe-mode-map* #\RET   'c-newline-and-indent)
-  (define-key *haxe-mode-map* #\#     'c-electric-insert)
-  (define-key *haxe-mode-map* #\:     'c-electric-insert)
-  (define-key *haxe-mode-map* #\}     'c-electric-close)
+  (define-key *haxe-mode-map* #\TAB 'haxe-indent-line)
+  (define-key *haxe-mode-map* #\RET 'haxe-newline-and-indent)
+  (define-key *haxe-mode-map* #\#   'c-electric-insert)
+  (define-key *haxe-mode-map* #\}   'c-electric-close)
   (define-key *haxe-mode-map* #\C-h 'backward-delete-char-untabify-or-selection))
-  (define-key *haxe-mode-map* '(#\ESC #\TAB) 'haxe-completion)
+  (define-key *haxe-mode-map* #\C-. 'haxe-completion)
   (define-key *haxe-mode-map* #\C-M-q 'indent-sexp)
+
+(defvar *haxeee-regexp-keyword-list*
+  (compile-regexp-keyword-list
+   '(("'[^']*'"    t (:color 9) t)
+     ("\"[^\"]*\"" t (:color 9) t)
+     ))
+  "haxe-mode: regex keyword list")
 
 (defvar *haxe-keyword-hash-table* nil)
 (defvar *haxe-keyword-file* "haxe")
 (defvar *haxe-keyword-cap-table* nil)
 (defvar *haxe-completion-list* nil)
-
 (defvar *haxe-mode-syntax-table* nil)
 (unless *haxe-mode-syntax-table*
   (setq *haxe-mode-syntax-table* (make-syntax-table))
@@ -121,7 +113,21 @@
 (unless *haxe-mode-abbrev-table*
   (define-abbrev-table '*haxe-mode-abbrev-table*))
 
+(defun haxe-indent-line ()
+  (interactive "*p")
+  (c-indent-line))
+
+(defun haxe-newline-and-indent (&optional (arg 1))
+  (interactive "*p")
+  (delete-trailing-spaces)
+  (insert #\LFD arg)
+  (haxe-indent-line))
+
+(defun haxe-completion ()
+  )
+
 (defun haxe-mode ()
+  "Major mode for editing haxe code"
   (interactive)
   (kill-all-local-variables)
   (setq buffer-mode 'haxe-mode)
@@ -134,19 +140,15 @@
   (setq paragraph-start "^$\\|\f")
   (make-local-variable 'paragraph-separate)
   (setq paragraph-separate paragraph-start)
+  (make-local-variable 'regexp-keyword-list)
+  (setq regexp-keyword-list *haxeee-regexp-keyword-list*)
   (and *haxe-keyword-file*
        (null *haxe-keyword-hash-table*)
        (setq *haxe-keyword-hash-table*
-	     (load-keyword-file *haxe-keyword-file* t)))
+         (load-keyword-file *haxe-keyword-file* t)))
   (when *haxe-keyword-hash-table*
     (make-local-variable 'keyword-hash-table)
-    (setq keyword-hash-table *haxe-keyword-hash-table*)
-    (unless *haxe-keyword-cap-table*
-      (setq *haxe-keyword-cap-table* (make-hash-table :test #'equalp :size
-						       (hash-table-size *haxe-keyword-hash-table*)))
-      (maphash #'(lambda (key val)
-		   (setf (gethash key *haxe-keyword-cap-table*) key))
-	       *haxe-keyword-hash-table*)))
+    (setq keyword-hash-table *haxe-keyword-hash-table*))
   (setq *local-abbrev-table* *haxe-mode-abbrev-table*)
   (setq comment-start "// ")
   (setq comment-end "")
@@ -155,3 +157,5 @@
   (when *haxe-comment-column*
     (setq comment-column *haxe-comment-column*))
   (run-hooks '*haxe-mode-hook*))
+
+;;; haxe-mode.l ends here

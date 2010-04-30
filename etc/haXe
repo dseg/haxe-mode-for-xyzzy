@@ -43,9 +43,9 @@ override
 super
 this
 arguments
-;*1
+;**e
 Void
-Int 
+Int
 Float
 Dynamic
 Bool
@@ -64,3 +64,9 @@ Xml
 #elseif
 #end
 #error
+js
+cpp
+php
+neko
+flash
+flash9
