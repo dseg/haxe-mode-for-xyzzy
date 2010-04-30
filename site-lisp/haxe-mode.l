@@ -78,7 +78,7 @@
   (define-key *haxe-mode-map* #\C-. 'haxe-completion)
   (define-key *haxe-mode-map* #\C-M-q 'indent-sexp)
 
-(defvar *haxeee-regexp-keyword-list*
+(defvar *haxe-regexp-keyword-list*
   (compile-regexp-keyword-list
    '(("'[^']*'"    t (:color 9) t)
      ("\"[^\"]*\"" t (:color 9) t)
@@ -141,7 +141,7 @@
   (make-local-variable 'paragraph-separate)
   (setq paragraph-separate paragraph-start)
   (make-local-variable 'regexp-keyword-list)
-  (setq regexp-keyword-list *haxeee-regexp-keyword-list*)
+  (setq regexp-keyword-list *haxe-regexp-keyword-list*)
   (and *haxe-keyword-file*
        (null *haxe-keyword-hash-table*)
        (setq *haxe-keyword-hash-table*
