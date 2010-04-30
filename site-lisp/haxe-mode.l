@@ -3,7 +3,7 @@
 ;; Title:   haxe-mode, A Xyzzy major mode for the haXe language
 ;; Author:  Daichi Shinozaki <shinozaki.daichi@classmethod.jp>
 ;; Date:    01/May/2010
-;; URL:     http://github.com/dseg/haxe-mode-xyzzy
+;; URL:     http://github.com/dseg/haxe-mode-for-xyzzy
 ;; SeeAlso: http://haxe.org/doc/start
 ;; License: MIT
 ;;
