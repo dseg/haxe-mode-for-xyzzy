@@ -1,4 +1,4 @@
-;; -*- Mode: Lisp; Package: EDITOR; -*- --------------------------------
+;; -*- Mode: Lisp; -*- -------------------------------------------------
 ;;
 ;; Title:   haxe-mode, A Xyzzy major mode for the haXe language
 ;; Author:  Daichi Shinozaki <shinozaki.daichi@classmethod.jp>
@@ -80,9 +80,8 @@
 
 (defvar *haxe-regexp-keyword-list*
   (compile-regexp-keyword-list
-   '(("'[^']*'"    t (:color 9) t)
-     ("\"[^\"]*\"" t (:color 9) t)
-     ))
+   `(("'[^']*'"    t ,*haxe-string-face* :string)
+     ("\"[^\"]*\"" t ,*haxe-string-face* :string))))
   "haxe-mode: regex keyword list")
 
 (defvar *haxe-keyword-hash-table* nil)
