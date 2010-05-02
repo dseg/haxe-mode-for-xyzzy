@@ -162,7 +162,6 @@
         (let ((keyword-list (format-haxe-proposed-keyword-list
                              (nthcdr 2 (car word-list))))
               (opoint (point)))
-          (message-box "hello")
           (do-completion opoint opoint :list keyword-list nil nil keyword-list)
           ))))
 
