@@ -138,7 +138,7 @@
   (insert #\LFD arg)
   (haxe-indent-line))
 
-; completion
+; code completion
 ; http://ncannasse.fr/blog/haxe_completion
 (defun haxe-completion ()
   (interactive)
