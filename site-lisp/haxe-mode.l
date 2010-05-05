@@ -2,7 +2,7 @@
 ;;
 ;; Title:   haxe-mode, A Xyzzy major mode for the haXe language
 ;; Author:  Daichi Shinozaki <shinozaki.daichi@classmethod.jp>
-;; Date:    01/May/2010
+;; Date:    05/May/2010
 ;; URL:     http://github.com/dseg/haxe-mode-for-xyzzy
 ;; SeeAlso: http://haxe.org/doc/start
 ;; License: MIT
@@ -10,7 +10,7 @@
 ;; $Id$
 ;;
 ;; Versions:
-;;    0.1 - Initial release, some syntax-hilighting only.
+;;    0.1 - Initial release, syntax-hilighting & code completion support.
 ;;
 ;; Usage:
 ;;  Include something like this in your .xyzzy
@@ -19,7 +19,9 @@
 ;; (push '("\\.hx$" . haxe-mode) *auto-mode-alist*)
 ;;
 ;; Note:
-;;  You need haxe v2.06 or later for code-completion.
+;;  For code completion, You need haxe v2.06 or later and
+;;  xml-parser-modoki.l courtesy of Masashi Hattori.
+;;  http://www7a.biglobe.ne.jp/~hat/xyzzy/dl.html
 ;;
 ;; Copyright (c) 2010 Daichi Shinozaki
 ;;
@@ -46,56 +48,70 @@
 (provide "haxe-mode")
 (require "cc-mode")
 (require "xml-parser-modoki")
-
 (export '(haxe-mode
-         *haxe-mode-abbrev-table*
-         *haxe-mode-syntax-table*
-         *haxe-indent-level*
-         *haxe-continued-line-offset*
-         *haxe-label-offset*
-         *haxe-tab-always-indent*
-         *haxe-mode-hook*
-         *haxe-comment-column*
-         *haxe-popup-completion-list*
-         *haxe-regexp-keyword-list*
-         *haxe-string-face*
-         *haxe-mode-map*
-         haxe-indent-line
-         haxe-newline-and-indent
-         haxe-completion))
+          *haxe-mode-abbrev-table*
+          *haxe-mode-syntax-table*
+          *haxe-indent-level*
+          *haxe-continued-line-offset*
+          *haxe-label-offset*
+          *haxe-tab-always-indent*
+          *haxe-mode-hook*
+          *haxe-comment-column*
+          *haxe-popup-completion-list*
+          *haxe-regexp-keyword-list*
+          *haxe-string-face*
+          *haxe-regexp-face*
+          *haxe-documentation-keyword-face*
+          *haxe-mode-map*
+          haxe-indent-line
+          haxe-newline-and-indent
+          haxe-completion))
 
-; constants, variable
-(defconstant *haxe-mode-version* "0.1" "haxe-mode: version")
-(defvar *haxe-indent-level*                               2)
-(defvar *haxe-continued-line-offset*                      2)
-(defvar *haxe-label-offset*                              -2)
-(defvar *haxe-tab-always-indent*                          t)
-(defvar *haxe-mode-hook*                                nil)
-(defvar *haxe-comment-column*                           nil)
-(defvar *haxe-popup-completion-list*                      t)
-(defvar *haxe-string-face*                      '(:color 9))
-(defconstant haxe-completion-buffer-name           "*haxe*")
-(defconstant haxe-empty-completion-result-regex
-  (compile-regexp "<list>\\r?\\n</list>"))
+; constants, variables
+(defconstant *haxe-mode-version*            "0.1" "haxe-mode: version")
+(defvar *haxe-indent-level*                                          2)
+(defvar *haxe-continued-line-offset*                                 2)
+(defvar *haxe-label-offset*                                         -2)
+(defvar *haxe-tab-always-indent*                                     t)
+(defvar *haxe-mode-hook*                                           nil)
+(defvar *haxe-comment-column*                                      nil)
+(defvar *haxe-popup-completion-list*                                 t)
+(defvar *haxe-string-face*                                 '(:color 9))
+(defvar *haxe-regexp-face*                                 '(:color 1))
+(defvar *haxe-documentation-keyword-face*                  '(:color 9))
+(defconstant haxe-completion-buffer-name                      "*haxe*")
+(defconstant haxe-empty-completion-result-regex "<list>\\r?\\n</list>")
 
 ; keymap
 (defvar *haxe-mode-map* nil)
 (unless *haxe-mode-map*
   (setq *haxe-mode-map* (make-sparse-keymap))
-  (define-key *haxe-mode-map* #\TAB 'haxe-indent-line)
-  (define-key *haxe-mode-map* #\RET 'haxe-newline-and-indent)
-  (define-key *haxe-mode-map* #\#   'c-electric-insert)
-  (define-key *haxe-mode-map* #\}   'c-electric-close)
-  (define-key *haxe-mode-map* #\C-h 'backward-delete-char-untabify-or-selection))
-  (define-key *haxe-mode-map* #\C-. 'haxe-completion)
-  (define-key *haxe-mode-map* #\C-M-q 'indent-sexp)
+  (define-key *haxe-mode-map* #\TAB   'haxe-indent-line)
+  (define-key *haxe-mode-map* #\RET   'haxe-newline-and-indent)
+  (define-key *haxe-mode-map* #\#     'c-electric-insert)
+  (define-key *haxe-mode-map* #\}     'c-electric-close)
+  (define-key *haxe-mode-map* #\C-h   'backward-delete-char-untabify-or-selection))
+(define-key *haxe-mode-map*   #\C-.   'haxe-completion)
+(define-key *haxe-mode-map*   #\C-M-q 'indent-sexp)
 
 ; regex keyword
+;(defvar haxe-documentation-keywords
+; '("author" "copy" "default" "deprecated" "eventType" "example"
+;   "exampleText" "exception" "haxe" "inheritDoc" "internal" "link"
+;   "param" "private" "return" "see" "serial" "serialData" "serialField"
+;   "since" "throws" "usage" "version")
+; "haxe documentation keywords")
+
 (defvar *haxe-regexp-keyword-list*
   (compile-regexp-keyword-list
-   `(("'[^']*'"    t ,*haxe-string-face* :string)
-     ("\"[^\"]*\"" t ,*haxe-string-face* :string)))
-  "haxe-mode: regex keyword list")
+   `(("'[^\']*'"
+      nil ,*haxe-string-face* :string)
+     ("\"[^\"]*\""
+      nil ,*haxe-string-face* :string)
+     ("@\\(?:author\\|copy\\|default\\|deprecated\\|eventType\\|example\\|exampleText\\|exception\\|haxe\\|inheritDoc\\|internal\\|link\\|param\\|private\\|return\\|see\\|serial\\|serialData\\|serialField\\|since\\|throws\\|usage\\|version\\)"
+      nil ,*haxe-documentation-keyword-face* :comment)
+     ("~/[^/\\]*\\(?:[\\].[^/\\]*\\)*/[igms]\\{,4\\}"
+      nil ,*haxe-regexp-face* nil))))
 
 ; keyword
 (defvar *haxe-keyword-hash-table* nil)
@@ -108,8 +124,8 @@
   (do ((x #x21 (1+ x)))
       ((>= x #x7f))
     (let ((c (code-char x)))
-      (unless (alphanumericp c)
-    (set-syntax-punctuation *haxe-mode-syntax-table* c))))
+      (if (not (alphanumericp c))
+        (set-syntax-punctuation *haxe-mode-syntax-table* c))))
   (set-syntax-string *haxe-mode-syntax-table*                #\")
   (set-syntax-string *haxe-mode-syntax-table*                #\')
   (set-syntax-symbol *haxe-mode-syntax-table*                #\_)
@@ -124,8 +140,8 @@
 
 ; mode abbrev
 (defvar *haxe-mode-abbrev-table* nil)
-(unless *haxe-mode-abbrev-table*
-  (define-abbrev-table '*haxe-mode-abbrev-table*))
+(if (not *haxe-mode-abbrev-table*)
+    (define-abbrev-table '*haxe-mode-abbrev-table*))
 
 ; indent
 (defun haxe-indent-line ()
@@ -143,10 +159,10 @@
 (defun haxe-completion ()
   (interactive)
   (let* ((fspec (get-buffer-file-name))
-         (bytepos (+ (point) (1- (get-bytecount-of-lines))))
+         (bytepos (+ (point) (get-extra-bytecount-of-eol)))
          ; cmd is something like:
          ;   haxe.exe test.hx --display "c:/devel/haxe/test.hx"@71
-         (cmd (format nil "haxe.exe ~a --display \"~a\"@~d"
+         (cmd (format nil "haxe.exe ~A --display \"~A\"@~D"
                       (file-namestring fspec) fspec bytepos))
          (curdir (default-directory))
          (keyword-xml nil)
@@ -155,14 +171,18 @@
       (with-output-to-temp-buffer (haxe-completion-buffer-name nil)
         (execute-shell-command cmd t haxe-completion-buffer-name t curdir)
         (setq keyword-xml (buffer-substring (point-min) (point-max)))
-        (unless (string-match haxe-empty-completion-result-regex keyword-xml)
-          (setq word-list (xmlpm-parse keyword-xml)))
-        ))
+        (setq word-list
+              (cond
+               ((string= "" keyword-xml) nil)
+               ((string-match haxe-empty-completion-result-regex keyword-xml) nil)
+               (t (xmlpm-parse keyword-xml))))))
+    (message "~D ~D" bytepos (get-extra-bytecount-of-eol))
     (if word-list
         (let ((keyword-list (format-haxe-proposed-keyword-list
                              (nthcdr 2 (car word-list))))
               (opoint (point)))
-          (do-completion opoint opoint :list keyword-list nil nil keyword-list)
+          (if keyword-list
+              (do-completion opoint opoint :list keyword-list nil nil keyword-list))
           ))))
 
 (defun format-haxe-proposed-keyword-list (keywords)
@@ -174,24 +194,25 @@
             (desc (second (cadddr keyword)))
             (compl-item nil))
         (setq compl-item
-              (concat
-               (or intf nil)
-               (and type (or (concat "(" type ")") nil))
-               (and desc (or (concat "[" desc "]") nil))))
-        (push compl-item result)
+              (concat intf
+                      (if type (concat "(" type ")") nil)
+                      (if desc (concat "[" desc "]") nil)))
+        (if compl-item
+            (push compl-item result))
         ))))
 
 ; internal helper functions
-(defun get-bytecount-of-lines ()
+(defun get-extra-bytecount-of-eol ()
   (let ((eol (buffer-eol-code)))
-    (cond 
+    (cond
      ((eq eol *eol-lf*) 0)
      ((eq eol *eol-cr*) 0)
-     ((eq eol *eol-crlf*) (current-line-number)))))
+     ((eq eol *eol-crlf*) (1- (current-line-number)))
+     (t 0))))
 
 ; haxe-mode
-(defun haxe-mode () 
- "Major mode for editing haxe code"
+(defun haxe-mode ()
+  "Major mode for editing haxe code"
   (interactive)
   (kill-all-local-variables)
   (setq buffer-mode 'haxe-mode)
@@ -209,7 +230,7 @@
   (and *haxe-keyword-file*
        (null *haxe-keyword-hash-table*)
        (setq *haxe-keyword-hash-table*
-         (load-keyword-file *haxe-keyword-file* t)))
+             (load-keyword-file *haxe-keyword-file* nil)))
   (when *haxe-keyword-hash-table*
     (make-local-variable 'keyword-hash-table)
     (setq keyword-hash-table *haxe-keyword-hash-table*))
