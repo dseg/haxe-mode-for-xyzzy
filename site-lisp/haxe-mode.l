@@ -99,15 +99,15 @@
   (define-key *haxe-mode-map* #\TAB   'haxe-indent-line)
   (define-key *haxe-mode-map* #\RET   'haxe-newline-and-indent)
   (define-key *haxe-mode-map* #\C-h   'backward-delete-char-untabify-or-selection)
-  (define-key *haxe-mode-map*   #\C-.   'haxe-completion)
-  (define-key *haxe-mode-map*   #\M-/   'haxe-completion)
-  (define-key *haxe-mode-map*   #\.     'haxe-electric-insert)
-  (define-key *haxe-mode-map*   #\(     'haxe-electric-insert)
-  (define-key *haxe-mode-map*   #\C-M-q 'indent-sexp))
+  (define-key *haxe-mode-map* #\C-.   'haxe-completion)
+  (define-key *haxe-mode-map* #\M-/   'haxe-completion)
+  (define-key *haxe-mode-map* #\.     'haxe-electric-insert)
+  (define-key *haxe-mode-map* #\(     'haxe-electric-insert)
+  (define-key *haxe-mode-map* #\C-M-q 'indent-sexp))
 
 ; regexp
 (defvar *haxe-beginning-of-defun-without-name-regexp*
-  "[ \t]*\\(?:\\(?:inline\\|override\\|public\\|private\\|static\\)[ \t]+\\)+function[ \t]+[$a-zA-Z_][$a-zA-Z0-9_]+")
+  "\\(?:\\(?:inline\\|override\\|public\\|private\\|static\\)[ \t]+\\)+function[ \t]+")
 
 (defvar *haxe-beginning-of-defun-regexp*
   (compile-regexp
