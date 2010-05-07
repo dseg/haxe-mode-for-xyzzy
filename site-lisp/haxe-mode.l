@@ -232,13 +232,15 @@
     (if word-list
         (let ((keyword-list (format-haxe-proposed-keyword-list
                              (nthcdr 2 (car word-list))))
-			  (opoint (point)))
-		  (if keyword-list
-			  (save-excursion
-				(popup-list keyword-list
-							#'(lambda (item)
-								(when item (insert item) (refresh-screen))))))))
-	))
+              (opoint (point)))
+          (cond
+           (
+          (if keyword-list
+              (save-excursion
+                (popup-list keyword-list
+                            #'(lambda (item)
+                                (when item (insert item) (refresh-screen))))))))
+    ))
 
 (defun format-haxe-proposed-keyword-list (keywords)
   (let ((result nil))
@@ -314,9 +316,10 @@
   (setq comment-indent-function 'c-comment-indent)
   (when *haxe-comment-column*
     (setq comment-column *haxe-comment-column*))
-  ;(if (boundp '*haxe-mode-autosave-as-utf8*)
-  ;    (add-hook '*before-save-buffer-hook*
-  ;              #'(lambda () (change-fileio-encoding *encoding-utf8n*))))
+  (when (boundp '*haxe-mode-autosave-as-utf8*)
+    (make-local-variable '*before-save-buffer-hook*)
+    (add-hook '*before-save-buffer-hook*
+              #'(lambda () (change-fileio-encoding *encoding-utf8n*))))
   (run-hooks '*haxe-mode-hook*))
 
 ;;; haxe-mode.l ends here
