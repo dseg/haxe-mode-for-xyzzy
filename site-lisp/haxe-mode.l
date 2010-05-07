@@ -307,13 +307,13 @@ Please run 'haxesetup' in haxe installation and try again.")
   ""
   (let ((eol (buffer-eol-code)))
     (cond
-     ((eq eol *eol-lf*) t)
-     ((eq eol *eol-cr*) t)
+     ((eq eol *eol-lf*) 0)
+     ((eq eol *eol-cr*) 0)
      ((eq eol *eol-crlf*) (1- (current-line-number)))
      (t 0))))
 
 (defun haxe-exe-existp ()
-  "test the haxe executable exists."
+  "Check if the haxe executable exists."
   (file-exist-p (concat (si:getenv "HAXEPATH") "haxe.exe")))
 
 ; haxe-mode
