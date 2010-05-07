@@ -2,7 +2,7 @@
 ;;
 ;; Title:   haxe-mode, A Xyzzy major mode for the haXe language
 ;; Author:  Daichi Shinozaki <shinozaki.daichi@classmethod.jp>
-;; Date:    $Date$
+;; Date:    ??/May/2010
 ;; URL:     http://github.com/dseg/haxe-mode-for-xyzzy
 ;; SeeAlso: http://haxe.org/doc/start
 ;; License: MIT
@@ -17,14 +17,15 @@
 ;; (push '("\\.hx$" . haxe-mode) *auto-mode-alist*)
 ;;
 ;; Note:
-;;  For code completion, You need haxe v2.06 or later and
-;;  xml-parser-modoki.l courtesy of Masashi Hattori.
+;;  For code completion, you need xml-parser-modoki.l courtesy of Masashi Hattori.
 ;;  http://www7a.biglobe.ne.jp/~hat/xyzzy/dl.html
 ;;
 ;; TODO:
 ;; * doc-comment insert
 ;; * tags support
 ;; * build support (*.hxml)
+;; * package completion
+;; * Static class member function completion
 ;;
 ;; Copyright (c) 2010 Daichi Shinozaki
 ;;
@@ -77,20 +78,34 @@
 
 ; constants, variables
 (defconstant *haxe-mode-version*             "0.1" "haxe-mode: version")
-(defvar *haxe-indent-level*                                           2)
-(defvar *haxe-continued-line-offset*                                  2)
-(defvar *haxe-label-offset*                                          -2)
-(defvar *haxe-tab-always-indent*                                      t)
-(defvar *haxe-mode-hook*                                            nil)
-(defvar *haxe-comment-column*                                       nil)
-(defvar *haxe-popup-completion-list*                                  t)
-(defvar *haxe-string-face*                                  '(:color 9))
-(defvar *haxe-ereg-face*                                    '(:color 1))
-(defvar *haxe-documentation-keyword-face*                   '(:color 9))
-(defvar *haxe-mode-autosave-as-utf8*                                nil)
-(defconstant haxe-completion-buffer-name                       "*haxe*")
-(defconstant haxe-empty-completion-result-regex  "<list>\\r?\\n</list>")
-(defconstant haxe-type-completion-result-regex "<type>\([^<]*\)</type>")
+(defvar *haxe-indent-level*                                           2
+  "")
+(defvar *haxe-continued-line-offset*                                  2
+  "")
+(defvar *haxe-label-offset*                                          -2
+  "")
+(defvar *haxe-tab-always-indent*                                      t
+  "")
+(defvar *haxe-mode-hook*                                            nil
+  "")
+(defvar *haxe-comment-column*                                       nil
+  "")
+(defvar *haxe-popup-completion-list*                                  t
+  "")
+(defvar *haxe-string-face*                                  '(:color 9)
+  "")
+(defvar *haxe-ereg-face*                                    '(:color 1)
+  "")
+(defvar *haxe-documentation-keyword-face*                   '(:color 9)
+  "")
+(defvar *haxe-mode-autosave-as-utf8*                                nil
+  "")
+(defconstant haxe-completion-buffer-name                       "*haxe*"
+  "")
+(defconstant haxe-empty-completion-result-regex  "<list>\\r?\\n</list>"
+  "")
+(defconstant haxe-type-completion-result-regex "<type>\([^<]*\)</type>"
+  "")
 
 ; keymap
 (defvar *haxe-mode-map* nil)
@@ -107,30 +122,37 @@
 
 ; regexp
 (defvar *haxe-beginning-of-defun-without-name-regexp*
-  "\\(?:\\(?:inline\\|override\\|public\\|private\\|static\\)[ \t]+\\)+function[ \t]+")
+  "\\<\\(?:\\(?:inline\\|override\\|public\\|private\\|static\\)[ \t]+\\)+function[ \t]+"
+  "")
 
 (defvar *haxe-beginning-of-defun-regexp*
   (compile-regexp
-   (concat *haxe-beginning-of-defun-without-name-regexp* "[$a-zA-Z_][$a-zA-Z0-9_]+") t))
+   (concat *haxe-beginning-of-defun-without-name-regexp* "[$a-zA-Z_][$a-zA-Z0-9_]+") t)
+  "")
 
 (defvar *haxe-singlequoted-string-regexp*
-  "'[^\']*'")
+  "'[^\']*'"
+  "")
 
 (defvar *haxe-doublequoted-string-regexp*
-  "\"[^\"]*\"")
+  "\"[^\"]*\""
+  "")
 
 (defvar *haxe-doumentation-keyword-regexp*
-  "@\\(?:author\\|copy\\|default\\|deprecated\\|eventType\\|example\\|exampleText\\|exception\\|haxe\\|inheritDoc\\|internal\\|link\\|param\\|private\\|return\\|see\\|serial\\|serialData\\|serialField\\|since\\|throws\\|usage\\|version\\)[ \t]?")
+  "@\\(?:author\\|copy\\|default\\|deprecated\\|eventType\\|example\\|exampleText\\|exception\\|haxe\\|inheritDoc\\|internal\\|link\\|param\\|private\\|return\\|see\\|serial\\|serialData\\|serialField\\|since\\|throws\\|usage\\|version\\)\\>"
+  "")
 
 (defvar *haxe-ereg-regexp*
-  "~/[^/\\]*\\(?:[\\].[^/\\]*\\)*/[igms]\\{,4\\}")
+  "~/[^/\\]*\\(?:[\\].[^/\\]*\\)*/[igms]\\{,4\\}"
+  "")
 
 (defvar *haxe-regexp-keyword-list*
   (compile-regexp-keyword-list
    `((,*haxe-singlequoted-string-regexp*  nil ,*haxe-string-face* :string)
      (,*haxe-doublequoted-string-regexp*  nil ,*haxe-string-face* :string)
      (,*haxe-doumentation-keyword-regexp* nil ,*haxe-documentation-keyword-face* :comment)
-     (,*haxe-ereg-regexp* nil ,*haxe-ereg-face* nil))))
+     (,*haxe-ereg-regexp* nil ,*haxe-ereg-face* nil)))
+  "")
 
 ; tags
 (pushnew '(haxe-maketags "*.hx") *maketags-list* :key #'car)
@@ -183,21 +205,25 @@
 
 ; indent
 (defun haxe-indent-line ()
+  ""
   (interactive "*p")
   (c-indent-line))
 
 (defun haxe-newline-and-indent (&optional (arg 1))
+  ""
   (interactive "*p")
   (delete-trailing-spaces)
   (insert #\LFD arg)
   (haxe-indent-line))
 
 (defun haxe-electric-insert (&optional (arg 1))
+  ""
   (interactive "*p")
   (self-insert-command arg)
   (haxe-indent-line))
 
 (defun haxe-build-summary-of-functions ()
+  ""
   (let ((result nil))
     (save-excursion
       (goto-char (point-min))
@@ -210,37 +236,52 @@
 ; code completion
 ; http://ncannasse.fr/blog/haxe_completion
 (defun haxe-completion ()
+  ""
   (interactive "*")
-  (let* ((fspec (get-buffer-file-name))
-         (bytepos (+ (point) (get-extra-bytecount-of-eol)))
-         ; cmd is something like:
-         ;   haxe.exe test.hx --display "c:/devel/haxe/test.hx"@71
-         (cmd (format nil "haxe.exe ~A --display \"~A\"@~D"
-                      (file-namestring fspec) fspec bytepos))
-         (curdir (default-directory))
-         (keyword-xml nil)
-         (word-list nil))
-    (save-window-excursion
-      (with-output-to-temp-buffer (haxe-completion-buffer-name nil)
-        (execute-shell-command cmd t haxe-completion-buffer-name t curdir)
-        (setq keyword-xml (buffer-substring (point-min) (point-max)))
-        (setq word-list
-              (cond
-               ((string= "" keyword-xml) nil)
-               ((string-match haxe-empty-completion-result-regex keyword-xml) nil)
-               (t (xmlpm-parse keyword-xml))))))
-    (if word-list
-        (let ((keyword-list (format-haxe-proposed-keyword-list
-                             (nthcdr 2 (car word-list))))
-              (opoint (point)))
-          (if keyword-list
-              (save-excursion
-                (popup-list keyword-list
-                            #'(lambda (item)
-                                (when item (insert item) (refresh-screen))))))))
-    ))
+  (let ((haxe-existp (haxe-exe-existp)))
+    (unless haxe-existp
+      (message-box "haxe.exe can not be located.
+Please run 'haxesetup' in haxe installation and try again.")
+      (return-from haxe-completion))
+    (let* ((fspec (get-buffer-file-name))
+           (bytepos (+ (point) (get-extra-bytecount-of-eol)))
+           ; cmd is something like:
+           ;   haxe.exe test.hx --display "c:/devel/haxe/test.hx"@71
+           (cmd (format nil "haxe.exe --display \"~A\"@~D ~A"
+                        fspec bytepos (file-namestring fspec)))
+           (curdir (default-directory))
+           (keyword-xml nil)
+           (word-list nil))
+      (save-window-excursion
+        (with-output-to-temp-buffer (haxe-completion-buffer-name nil)
+          (execute-shell-command cmd t haxe-completion-buffer-name t curdir)
+          (setq keyword-xml (buffer-substring (point-min) (point-max)))
+          (setq word-list
+                (cond
+                 ((string= "" keyword-xml) nil)
+                 ((string-match haxe-empty-completion-result-regex keyword-xml) nil)
+                 (t (xmlpm-parse keyword-xml))))))
+      (if (null word-list)
+          (return-from haxe-completion))
+      (let ((keyword-list (format-haxe-proposed-keyword-list (nthcdr 2 (car word-list))))
+            (opoint (point)))
+        (if keyword-list
+            (popup-list
+             keyword-list
+             #'(lambda (item)
+                 (if item
+                     (let* ((oparen (string-matchp "(" item))
+                            (methodp (numberp oparen)))
+                       (if methodp
+                           (progn
+                             (insert (substring item 0 (1+ oparen)))
+                             (popup-string item (+ opoint oparen)))
+                         (insert item))
+                       (refresh-screen)
+                       )))))))))
 
 (defun format-haxe-proposed-keyword-list (keywords)
+  ""
   (let ((result nil))
     (dolist (keyword keywords
                      result)
@@ -256,22 +297,24 @@
             (push compl-item result))
         ))))
 
+(defun insert-haxedoc-comment ()
+  ""
+  (interactive "*")
+  )
+
 ; internal helper functions
 (defun get-extra-bytecount-of-eol ()
+  ""
   (let ((eol (buffer-eol-code)))
     (cond
-     ((eq eol *eol-lf*) 0)
-     ((eq eol *eol-cr*) 0)
+     ((eq eol *eol-lf*) t)
+     ((eq eol *eol-cr*) t)
      ((eq eol *eol-crlf*) (1- (current-line-number)))
      (t 0))))
 
-(defun looking-at-backward (regexp &optional case-fold)
-  (save-excursion
-    (save-restriction
-      (narrow-to-region (point-min) (point))
-      (goto-char (point-min))
-      (scan-buffer (format nil "~A\\'" regexp)
-                   :regexp t :case-fold case-fold))))
+(defun haxe-exe-existp ()
+  "test the haxe executable exists."
+  (file-exist-p (concat (si:getenv "HAXEPATH") "haxe.exe")))
 
 ; haxe-mode
 (defun haxe-mode ()
@@ -293,7 +336,7 @@
   (make-local-variable 'mode-specific-end-of-defun)
   (setq mode-specific-end-of-defun 'haxe-end-of-defun)
   (make-local-variable 'tags-find-target)
-;  (setq tags-find-target #'tags-find-target-simple)
+  (setq tags-find-target #'tags-find-target-simple)
   (make-local-variable 'tags-find-point)
   (setq tags-find-point #'tags-find-haxe-point)
   (make-local-variable 'build-summary-function)
@@ -314,10 +357,11 @@
   (setq comment-indent-function 'c-comment-indent)
   (when *haxe-comment-column*
     (setq comment-column *haxe-comment-column*))
-  (when (boundp '*haxe-mode-autosave-as-utf8*)
-    (make-local-variable '*before-save-buffer-hook*)
-    (add-hook '*before-save-buffer-hook*
-              #'(lambda () (change-fileio-encoding *encoding-utf8n*))))
+;  (when (boundp '*haxe-mode-autosave-as-utf8*)
+;    (make-local-variable '*before-save-buffer-hook*)
+;    (add-hook '*before-save-buffer-hook*
+;              #'(lambda ()
+;                  (or (change-fileio-encoding *encoding-utf8n*) t))))
   (run-hooks '*haxe-mode-hook*))
 
 ;;; haxe-mode.l ends here
