@@ -203,7 +203,6 @@
       (goto-char (point-min))
       (while
           (scan-buffer *haxe-beginning-of-defun-regexp*
-;          (scan-buffer "[ \t]*\\(?:\\(?:inline\\|override\\|public\\|private\\|static\\)[ \t]+\\)+function[ \t]+[$a-zA-Z_][$a-zA-Z0-9_]+"
           :regexp t :case-fold t :tail t)
         (push (list (current-line-number) (match-string 0)) result)))
     (nreverse result)))
@@ -211,7 +210,7 @@
 ; code completion
 ; http://ncannasse.fr/blog/haxe_completion
 (defun haxe-completion ()
-  (interactive)
+  (interactive "*")
   (let* ((fspec (get-buffer-file-name))
          (bytepos (+ (point) (get-extra-bytecount-of-eol)))
          ; cmd is something like:
@@ -230,17 +229,16 @@
                ((string= "" keyword-xml) nil)
                ((string-match haxe-empty-completion-result-regex keyword-xml) nil)
                (t (xmlpm-parse keyword-xml))))))
-    (message "~D ~D" bytepos (get-extra-bytecount-of-eol))
     (if word-list
         (let ((keyword-list (format-haxe-proposed-keyword-list
                              (nthcdr 2 (car word-list))))
-              (opoint (point)))
-          (if keyword-list
-              (multiple-value-bind (result list prefix)
-                  (do-completion opoint opoint :list keyword-list
-                                 nil nil *haxe-popup-completion-list*)
-                (message "~A ~{~A~} ~A" result list prefix)
-                ))))))
+			  (opoint (point)))
+		  (if keyword-list
+			  (save-excursion
+				(popup-list keyword-list
+							#'(lambda (item)
+								(when item (insert item) (refresh-screen))))))))
+	))
 
 (defun format-haxe-proposed-keyword-list (keywords)
   (let ((result nil))
@@ -316,9 +314,9 @@
   (setq comment-indent-function 'c-comment-indent)
   (when *haxe-comment-column*
     (setq comment-column *haxe-comment-column*))
-  (if (boundp '*haxe-mode-autosave-as-utf8*)
-      (add-hook '*before-save-buffer-hook*
-                #'(lambda () (change-fileio-encoding *encoding-utf8n*))))
+  ;(if (boundp '*haxe-mode-autosave-as-utf8*)
+  ;    (add-hook '*before-save-buffer-hook*
+  ;              #'(lambda () (change-fileio-encoding *encoding-utf8n*))))
   (run-hooks '*haxe-mode-hook*))
 
 ;;; haxe-mode.l ends here
