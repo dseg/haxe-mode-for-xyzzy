@@ -233,8 +233,6 @@
         (let ((keyword-list (format-haxe-proposed-keyword-list
                              (nthcdr 2 (car word-list))))
               (opoint (point)))
-          (cond
-           (
           (if keyword-list
               (save-excursion
                 (popup-list keyword-list
