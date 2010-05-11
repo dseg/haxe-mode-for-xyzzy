@@ -21,7 +21,6 @@
 ;;  http://www7a.biglobe.ne.jp/~hat/xyzzy/dl.html
 ;;
 ;; TODO:
-;; * doc-comment insert
 ;; * tags support
 ;; * build support (*.hxml)
 ;; * package completion
@@ -74,6 +73,7 @@
           *haxe-mode-autosave-as-utf8*
           haxe-indent-line
           haxe-newline-and-indent
+          haxe-insert-doc-comment
           haxe-completion))
 
 ; constants, variables
@@ -118,7 +118,8 @@
   (define-key *haxe-mode-map* #\M-/   'haxe-completion)
   (define-key *haxe-mode-map* #\.     'haxe-electric-insert)
   (define-key *haxe-mode-map* #\(     'haxe-electric-insert)
-  (define-key *haxe-mode-map* #\C-M-q 'indent-sexp))
+  (define-key *haxe-mode-map* #\C-M-q 'indent-sexp)
+  (define-key *haxe-mode-map* '(#\C-c #\d) 'haxe-insert-doc-comment))
 
 ; regexp
 (defvar *haxe-beginning-of-defun-without-name-regexp*
@@ -302,10 +303,21 @@ Please run 'haxesetup' in haxe installation and try again.")
             (push compl-item result))
         ))))
 
-(defun insert-haxedoc-comment ()
-  ""
+(defun haxe-insert-doc-comment ()
+  "Insert a documentation comment block."
   (interactive "*")
-  )
+  (save-excursion
+    (let* ((end (point))
+           (beg (and (goto-bol) (point)))
+           (indent (- end beg)))
+      (and (numberp indent) (not (minusp indent))
+           (let ((indent-str (buffer-substring beg end)))
+             (and indent-str
+                  (delete-region beg end)
+                  (insert (concat indent-str "/**\n"
+                                  indent-str " *\n"
+                                  indent-str " */"))))
+           ))))
 
 ; internal helper functions
 (defun get-extra-bytecount-of-eol ()
