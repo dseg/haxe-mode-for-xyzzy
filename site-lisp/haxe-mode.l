@@ -118,6 +118,7 @@
   (define-key *haxe-mode-map* #\.     'haxe-electric-insert)
   (define-key *haxe-mode-map* #\(     'haxe-electric-insert)
   (define-key *haxe-mode-map* #\C-M-q 'indent-sexp)
+;  (define-key *haxe-mode-map* '#\F1   'haxe-open-help)
   (define-key *haxe-mode-map* '(#\C-c #\d) 'haxe-insert-doc-comment))
 
 ; regexp
@@ -305,18 +306,46 @@ Please run 'haxesetup' in haxe installation and try again.")
 (defun haxe-insert-doc-comment ()
   "Insert a documentation comment block."
   (interactive "*")
-  (save-excursion
+  (let ((classp nil)
+        (functionp nil))
+    (save-excursion
+      (when (next-line)
+        (goto-bol)
+        (skip-chars-forward " \t")
+        (if (looking-at "\\<class\\>")
+            (setq classp t)
+          (if (looking-at "\\<function\\>")
+              (setq functionp t)))))
     (let* ((end (point))
            (beg (and (goto-bol) (point)))
            (indent (- end beg)))
       (and (numberp indent) (not (minusp indent))
            (let ((indent-str (buffer-substring beg end)))
-             (and indent-str
+             (and indent-str 
                   (delete-region beg end)
-                  (insert (concat indent-str "/**\n"
-                                  indent-str " *\n"
-                                  indent-str " */"))))
+                  (insert
+                   (concat indent-str "/**\n"
+                           indent-str " *" (and classp " @author ") "\n"
+                           indent-str " */"))))
            ))))
+
+;(defun haxe-open-help ()
+;  (interactive)
+;  (let (start end)
+;    (multiple-value-bind (start end)
+;        (get-selection-start-end)
+;      (if start
+;          (haxe-open-help-file (buffer-substring start end))))))
+
+;(defun haxe-open-help-file (keyword)
+;  (when (stringp keyword)
+;    (let ((docdir (concat (si:getenv "HAXEPATH") "doc\\content\\"))
+;          (name (concat keyword ".html")))
+;      (if (and (boundp 'browswerex-installed-p) browserex-installed-p)
+;          t ; TODO
+;        (message-box (concat docdir name))
+;        ;(shell-execute (concat docdir name))
+;        ))))
 
 ; internal helper functions
 (defun get-extra-bytecount-of-eol ()
@@ -373,11 +402,11 @@ Please run 'haxesetup' in haxe installation and try again.")
   (setq comment-indent-function 'c-comment-indent)
   (when *haxe-comment-column*
     (setq comment-column *haxe-comment-column*))
-;  (when (boundp '*haxe-mode-autosave-as-utf8*)
-;    (make-local-variable '*before-save-buffer-hook*)
-;    (add-hook '*before-save-buffer-hook*
-;              #'(lambda ()
-;                  (or (change-fileio-encoding *encoding-utf8n*) t))))
+  (when *haxe-mode-autosave-as-utf8*
+    (make-local-variable '*before-save-buffer-hook*)
+    (add-hook '*before-save-buffer-hook*
+              #'(lambda ()
+                  (if (change-fileio-encoding *encoding-utf8*) nil))))
   (run-hooks '*haxe-mode-hook*))
 
 ;;; haxe-mode.l ends here
