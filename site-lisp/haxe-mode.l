@@ -73,7 +73,6 @@
           *haxe-mode-autosave-as-utf8*
           haxe-indent-line
           haxe-newline-and-indent
-          haxe-insert-doc-comment
           haxe-completion))
 
 ; constants, variables
@@ -243,7 +242,7 @@
   (interactive "*")
   (let ((haxe-existp (haxe-exe-existp)))
     (unless haxe-existp
-      (message-box "haxe.exe can not be located.
+      (error "haxe.exe can not be located.
 Please run 'haxesetup' in haxe installation and try again.")
       (return-from haxe-completion))
     (let* ((fspec (get-buffer-file-name))
