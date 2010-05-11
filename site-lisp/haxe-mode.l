@@ -127,7 +127,7 @@
 
 (defvar *haxe-beginning-of-defun-regexp*
   (compile-regexp
-   (concat *haxe-beginning-of-defun-without-name-regexp* "[$a-zA-Z_][$a-zA-Z0-9_]+") t)
+   (concat *haxe-beginning-of-defun-without-name-regexp* "[A-Za-z_][A-Za-z0-9_]+") t)
   "")
 
 (defvar *haxe-singlequoted-string-regexp*
@@ -143,7 +143,7 @@
   "")
 
 (defvar *haxe-ereg-regexp*
-  "~/[^/\\]*\\(?:[\\].[^/\\]*\\)*/[igms]\\{,4\\}"
+  "~/[^/\\]*\\(?:[\\].[^/\\]*\\)*/[gimsu]\\{,4\\}"
   "")
 
 (defvar *haxe-regexp-keyword-list*
@@ -178,7 +178,8 @@
 (defvar *haxe-keyword-file* "haXe")
 
 ; syntax table
-(defvar *haxe-mode-syntax-table* nil)
+(defvar *haxe-mode-syntax-table* nil
+  "haxe-mode syntax table")
 (unless *haxe-mode-syntax-table*
   (setq *haxe-mode-syntax-table* (make-syntax-table))
   (do ((x #x21 (1+ x)))
@@ -186,17 +187,18 @@
     (let ((c (code-char x)))
       (if (not (alphanumericp c))
         (set-syntax-punctuation *haxe-mode-syntax-table* c))))
-  (set-syntax-string *haxe-mode-syntax-table*                #\")
-  (set-syntax-string *haxe-mode-syntax-table*                #\')
-  (set-syntax-symbol *haxe-mode-syntax-table*                #\_)
-  (set-syntax-symbol *haxe-mode-syntax-table*                #\#)
-  (set-syntax-match  *haxe-mode-syntax-table*            #\( #\))
-  (set-syntax-match  *haxe-mode-syntax-table*            #\{ #\})
-  (set-syntax-match  *haxe-mode-syntax-table*            #\[ #\])
-  (set-syntax-start-multi-comment *haxe-mode-syntax-table*  "/*")
-  (set-syntax-end-multi-comment   *haxe-mode-syntax-table*  "*/")
-  (set-syntax-start-c++-comment   *haxe-mode-syntax-table*   #\/)
-  (set-syntax-end-c++-comment     *haxe-mode-syntax-table* #\LFD))
+  (set-syntax-string                 *haxe-mode-syntax-table* #\")
+  (set-syntax-string                 *haxe-mode-syntax-table* #\')
+  (set-syntax-symbol                 *haxe-mode-syntax-table* #\_)
+  (set-syntax-symbol                 *haxe-mode-syntax-table* #\#)
+  (set-syntax-match              *haxe-mode-syntax-table* #\( #\))
+  (set-syntax-match              *haxe-mode-syntax-table* #\{ #\})
+  (set-syntax-match              *haxe-mode-syntax-table* #\[ #\])
+  (set-syntax-start-multi-comment  *haxe-mode-syntax-table*  "/*")
+  (set-syntax-end-multi-comment    *haxe-mode-syntax-table*  "*/")
+  (set-syntax-start-c++-comment    *haxe-mode-syntax-table*   #\/)
+  (set-syntax-end-c++-comment      *haxe-mode-syntax-table* #\LFD)
+  (set-syntax-escape               *haxe-mode-syntax-table*   #\\))
 
 ; mode abbrev
 (defvar *haxe-mode-abbrev-table* nil)
