@@ -306,28 +306,42 @@ Please run 'haxesetup' in haxe installation and try again.")
 (defun haxe-insert-doc-comment ()
   "Insert a documentation comment block."
   (interactive "*")
-  (let ((classp nil)
-        (functionp nil))
+  (let ((beg (point))
+        (end (point))
+        (classp nil)
+        (functionp nil)
+        (indent-str nil))
     (save-excursion
       (when (next-line)
         (goto-bol)
-        (skip-chars-forward " \t")
-        (if (looking-at "\\<class\\>")
-            (setq classp t)
-          (if (looking-at "\\<function\\>")
-              (setq functionp t)))))
-    (let* ((end (point))
-           (beg (and (goto-bol) (point)))
-           (indent (- end beg)))
-      (and (numberp indent) (not (minusp indent))
-           (let ((indent-str (buffer-substring beg end)))
-             (and indent-str 
-                  (delete-region beg end)
-                  (insert
-                   (concat indent-str "/**\n"
-                           indent-str " *" (and classp " @author ") "\n"
-                           indent-str " */"))))
-           ))))
+        (setq beg (point))
+        (skip-white-forward)
+        (setq end (point))
+        (setq classp (looking-at ".*\\<class\\>"))
+        (setq functionp (or classp (looking-at ".*\\<function\\>")))
+        (setq indent-str (buffer-substring beg end))))
+    (let ((items (cond
+                  (classp '("@author"))
+                  (functionp '("@param" "@return"))
+                  (t nil))))
+      (progn (goto-bol)
+        (if (looking-at "[ \t]+$")
+            (kill-line)))
+      (insert
+       indent-str "/**\n"
+       (if (null items)
+           (concat indent-str " * \n")
+         (format nil "~{~A * ~A \n~^~}"
+                 (apply #'nconc
+                        (mapcar #'list
+                                (make-list (length items)
+                                           :initial-element indent-str)
+                                items))))
+       indent-str " */")
+      ; delete empty characters after "*/"
+      (if (looking-at "[ \t]")
+          (delete-region (point)
+                         (progn (goto-eol) (point)))))))
 
 ;(defun haxe-open-help ()
 ;  (interactive)
