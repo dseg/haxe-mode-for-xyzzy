@@ -318,7 +318,7 @@ Please run 'haxesetup' in haxe installation and try again.")
         (skip-white-forward)
         (setq end (point))
         (setq classp (looking-at ".*\\<class\\>"))
-        (setq functionp (or classp (looking-at ".*\\<function\\>")))
+        (setq functionp (and (null classp) (looking-at ".*\\<function\\>")))
         (setq indent-str (buffer-substring beg end))))
     (let ((items (cond
                   (classp '("@author"))
