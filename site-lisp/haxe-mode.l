@@ -250,7 +250,7 @@ Please run 'haxesetup' in haxe installation and try again.")
            (bytepos (+ (point) (get-extra-bytecount-of-eol)))
            ; cmd is something like:
            ;   haxe.exe test.hx --display "c:/devel/haxe/test.hx"@71
-           (cmd (format nil "haxe.exe --display \"~A\"@~D ~A"
+           (cmd (format nil "haxe.exe --display ~S@~D ~A"
                         fspec bytepos (file-namestring fspec)))
            (curdir (default-directory))
            (keyword-xml nil)
@@ -331,7 +331,7 @@ Please run 'haxesetup' in haxe installation and try again.")
        indent-str "/**\n"
        (if (null items)
            (concat indent-str " * \n")
-         (format nil "~{~A * ~A \n~^~}"
+         (format nil "~{~A * ~A ~%~^~}"
                  (apply #'nconc
                         (mapcar #'list
                                 (make-list (length items)
